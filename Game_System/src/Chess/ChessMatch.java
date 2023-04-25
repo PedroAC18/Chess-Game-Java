@@ -1,6 +1,8 @@
 package Chess;
 
 import Boardgame.Board;
+import Boardgame.Position;
+import ChessPieces.Rook;
 
 //class wtih game rules
 public class ChessMatch {
@@ -19,5 +21,10 @@ public class ChessMatch {
             }
         }
         return mat; //return of matrix with the pieces of the game
+    }
+    //responsable for placing the pieces on the board
+    private void initalSetup(){
+        board.placePiece(new Rook(board, Color.WHITE), new Position(2,1));
+
     }
 }
