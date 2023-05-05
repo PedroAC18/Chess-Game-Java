@@ -10,6 +10,7 @@ public class ChessMatch {
 
     public ChessMatch(){
         board = new Board(8,8);//setting the board length
+        inititalSetup();
     }
     //return a piece matrix
     public ChessPiece[][] getPieces(){
@@ -22,9 +23,14 @@ public class ChessMatch {
         }
         return mat; //return of matrix with the pieces of the game
     }
-    //responsable for placing the pieces on the board
-    private void initalSetup(){
-        board.placePiece(new Rook(board, Color.WHITE), new Position(2,1));
 
+    //placing pieces according to board positions (b1, a2)
+    private void placeNewPiece(char column, int row, ChessPiece piece){
+        board.placePiece(piece, new ChessPosition(column, row).toPosition());
+    }
+
+    private void inititalSetup(){
+        placeNewPiece('b',6, new Rook(board, Color.WHITE));
+        placeNewPiece('e',8, new Rook(board, Color.BLACK));
     }
 }
