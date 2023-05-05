@@ -32,6 +32,9 @@ public class Board {
 
     //Override using Position to return the piece
     public Piece piece(Position position){
+        if(!positionExists(position)){
+            throw new BoardException("Position not on the board");
+        }
         return pieces[position.getRow()][position.getColumn()];
     }
     //responsable for placing the piece on the board
@@ -41,6 +44,22 @@ public class Board {
         }
         pieces[position.getRow()][position.getColumn()] = piece;
         piece.position = position;
+    }
+
+    //responsable for removing piece on the board
+    public Piece removePiece(Position position){
+        if(!positionExists(position)){
+            throw new BoardException("Position not on the board");
+        }
+
+        if(piece(position) == null){
+            return null;
+        }
+
+        Piece aux = piece(position);
+        aux.position = null;
+        pieces[position.getRow()][position.getColumn()] = null;// removing piece from the board
+        return aux;
     }
 
     //auxiliar method that uses the rows and colums to validate, it's easier using this than position
