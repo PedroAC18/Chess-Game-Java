@@ -8,12 +8,15 @@ import ChessPieces.Rook;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 //class with game rules
 public class ChessMatch {
     private Board board;
     private int turn;
     private Color currentPlayer;
+    private boolean check;
+    private boolean checkMate;
 
     private List<Piece> piecesOnBoard = new ArrayList<>();
     private List<Piece> capturedPieces = new ArrayList<>();
@@ -32,7 +35,13 @@ public class ChessMatch {
         return currentPlayer;
     }
 
+    public boolean getCheck(){
+        return check;
+    }
 
+    public boolean getCheckMate(){
+        return checkMate;
+    }
 
     //return a piece matrix
     public ChessPiece[][] getPieces(){
@@ -59,7 +68,21 @@ public class ChessMatch {
         Position targetPos = target.toPosition();
         validateSourcePos(sourcePos);
         Piece capturedPiece = makeMove(sourcePos, targetPos);//making the users movement
-        nextTurn();
+        //player can't put himself in check state
+        if(testCheck(currentPlayer)){
+            undoMove(sourcePos, targetPos, capturedPiece);
+            throw new ChessException("You can't put yourself in check");
+        }
+
+        //check if the opponent is in check
+        check = (testCheck(opponent(currentPlayer))) ? true : false;
+
+        //if the move generate a check mate, the game needs to end
+        if(testCheckMate(opponent(currentPlayer))){
+            checkMate = true;
+        }else {
+            nextTurn();
+        }
         return (ChessPiece) capturedPiece;//it's necessary to downcast Piece to ChessPiece
     }
 
@@ -94,6 +117,18 @@ public class ChessMatch {
         return capturedPiece;
     }
 
+    //method to undo the makeMove
+    private void undoMove(Position source, Position target, Piece capturedPiece){
+        Piece p = board.removePiece(target);
+        board.placePiece(p, source);
+
+        if(capturedPiece != null){//it means that a piece was captured and it needs to get replaced on the board
+            board.placePiece(capturedPiece, target);
+            capturedPieces.remove(capturedPiece);
+            piecesOnBoard.add(capturedPiece);
+        }
+    }
+
     private void validateSourcePosition(Position position){
         if(!board.thereIsAPiece(position)){
             throw new ChessException("There is no piece on source position");
@@ -103,9 +138,69 @@ public class ChessMatch {
         }
     }
 
+    //change players turns
     private void nextTurn(){
         turn++;
         currentPlayer = (currentPlayer == Color.WHITE ? Color.BLACK : Color.WHITE);
+    }
+
+    //change player color to play
+    private Color opponent(Color color){
+        return (color == Color.WHITE) ? Color.BLACK : Color.WHITE;
+    }
+
+    //list to filter what is the king's color
+    private ChessPiece king(Color color){
+        List<Piece> list = piecesOnBoard.stream().filter(x -> ((ChessPiece)x).getColor() == color).collect(Collectors.toList());
+        for(Piece p : list){
+            if( p instanceof King){
+                return (ChessPiece) p;
+
+            }
+        }
+        //exception throws if there is no king on board (should never been used)
+        throw new IllegalStateException("There is no" + color + "king on the board");
+    }
+
+    //method to see if any piece on board is in a check state
+    private boolean testCheck(Color color){
+        Position kingPosition = king(color).getChessPosition().toPosition();
+        List<Piece> opponentPieces = piecesOnBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
+        for(Piece p : opponentPieces){
+            boolean[][] mat = p.possibleMoves();
+            if(mat[kingPosition.getRow()][kingPosition.getColumn()]){//check if any piece in check with the opponent king
+                return true;
+            }
+        }
+        return false;//there is no check state
+    }
+
+    //method to see if the game is in a check mate situation
+    private boolean testCheckMate(Color color){
+        if(!testCheck(color)){
+            return false;//game is not in a check mate situation
+        }
+        //gets all pieces of the color
+        List<Piece> list = piecesOnBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
+        for(Piece p: list){
+            boolean[][] mat = p.possibleMoves();
+            for(int i=0; i<board.getRows(); i++){
+                for(int j=0; j< board.getColumns(); j++){
+                    if(mat[i][j]){
+                        //simulate the piece move to see if it's gonna be a check mate
+                        Position source = ((ChessPiece)p).getChessPosition().toPosition();
+                        Position target = new Position(i,j);
+                        Piece capturedPiece = makeMove(source, target);
+                        boolean testCheck = testCheck(color);
+                        undoMove(source, target, capturedPiece);
+                        if(!testCheck){
+                            return false;//the piece avoided the check mate
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     //placing pieces according to board positions (b1, a2)
