@@ -105,7 +105,8 @@ public class ChessMatch {
     }
 
     private Piece makeMove(Position source, Position target){
-        Piece p = board.removePiece(source);//removing piece from source
+        ChessPiece p = (ChessPiece)board.removePiece(source);//removing piece from source
+        p.increaseMoveCount();
         Piece capturedPiece = board.removePiece(target); //if there is a piece on target, this method is going to capture it
         board.placePiece(p, target);//places the piece on the target
 
@@ -119,7 +120,8 @@ public class ChessMatch {
 
     //method to undo the makeMove
     private void undoMove(Position source, Position target, Piece capturedPiece){
-        Piece p = board.removePiece(target);
+        ChessPiece p = (ChessPiece) board.removePiece(target);
+        p.decreaseMoveCount();
         board.placePiece(p, source);
 
         if(capturedPiece != null){//it means that a piece was captured and it needs to get replaced on the board
