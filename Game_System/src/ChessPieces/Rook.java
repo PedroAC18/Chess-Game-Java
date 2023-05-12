@@ -11,7 +11,7 @@ public class Rook extends ChessPiece {
         super(board, color);
     }
 
-    @Override//shows on board 'R' representing the rook
+    @Override
     public String toString() {
         return "R";
     }
@@ -20,48 +20,47 @@ public class Rook extends ChessPiece {
     public boolean[][] possibleMoves() {
         boolean[][] mat = new boolean[getBoard().getRows()][getBoard().getColumns()];
 
-        Position p = new Position(0,0);//auxiliar position
+        Position p = new Position(0, 0);
 
-        //above
-        p.setValues(position.getRow()-1, position.getColumn());
-        while(getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)){
-            mat[p.getRow()][p.getColumn()] = true;//indicates that the piece can move to that square
+        // above
+        p.setValues(position.getRow() - 1, position.getColumn());
+        while (getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)) {
+            mat[p.getRow()][p.getColumn()] = true;
             p.setRow(p.getRow() - 1);
         }
-        if(getBoard().positionExists(p) && isThereOpponentPiece(p)){//checks if there is a opponent piece on the rook way
+        if (getBoard().positionExists(p) && isThereOpponentPiece(p)) {
             mat[p.getRow()][p.getColumn()] = true;
         }
 
-        //left
-        p.setValues(position.getRow(), position.getColumn()-1);
-        while(getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)){
-            mat[p.getRow()][p.getColumn()] = true;//indicates that the piece can move to that square
-            p.setColumn(p.getColumn()-1);
+        // left
+        p.setValues(position.getRow(), position.getColumn() - 1);
+        while (getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)) {
+            mat[p.getRow()][p.getColumn()] = true;
+            p.setColumn(p.getColumn() - 1);
         }
-        if(getBoard().positionExists(p) && isThereOpponentPiece(p)){//checks if there is a opponent piece on the rook way
+        if (getBoard().positionExists(p) && isThereOpponentPiece(p)) {
             mat[p.getRow()][p.getColumn()] = true;
         }
 
-        //right
-        p.setValues(position.getRow(), position.getColumn()+1);
-        while(getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)){
-            mat[p.getRow()][p.getColumn()] = true;//indicates that the piece can move to that square
-            p.setColumn(p.getColumn()+1);
+        // right
+        p.setValues(position.getRow(), position.getColumn() + 1);
+        while (getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)) {
+            mat[p.getRow()][p.getColumn()] = true;
+            p.setColumn(p.getColumn() + 1);
         }
-        if(getBoard().positionExists(p) && isThereOpponentPiece(p)){//checks if there is a opponent piece on the rook way
+        if (getBoard().positionExists(p) && isThereOpponentPiece(p)) {
             mat[p.getRow()][p.getColumn()] = true;
         }
 
-        //below
-        p.setValues(position.getRow()+1, position.getColumn());
-        while(getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)){
-            mat[p.getRow()][p.getColumn()] = true;//indicates that the piece can move to that square
+        // below
+        p.setValues(position.getRow() + 1, position.getColumn());
+        while (getBoard().positionExists(p) && !getBoard().thereIsAPiece(p)) {
+            mat[p.getRow()][p.getColumn()] = true;
             p.setRow(p.getRow() + 1);
         }
-        if(getBoard().positionExists(p) && isThereOpponentPiece(p)){//checks if there is a opponent piece on the rook way
+        if (getBoard().positionExists(p) && isThereOpponentPiece(p)) {
             mat[p.getRow()][p.getColumn()] = true;
         }
-
 
         return mat;
     }

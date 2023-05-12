@@ -16,41 +16,41 @@ import ChessPieces.Rook;
 
 //class with game rules
 public class ChessMatch {
-    private Board board;
     private int turn;
     private Color currentPlayer;
+    private Board board;
     private boolean check;
     private boolean checkMate;
-
     private ChessPiece enPassantVulnerable;
     private ChessPiece promoted;
 
-    private List<Piece> piecesOnBoard = new ArrayList<>();
+    private List<Piece> piecesOnTheBoard = new ArrayList<>();
     private List<Piece> capturedPieces = new ArrayList<>();
-    public ChessMatch(){
-        board = new Board(8,8);//setting the board length
+
+    public ChessMatch() {
+        board = new Board(8, 8);
         turn = 1;
         currentPlayer = Color.WHITE;
-        inititalSetup();
+        initialSetup();
     }
 
-    public int getTurn(){
+    public int getTurn() {
         return turn;
     }
 
-    public Color getCurrentPlayer(){
+    public Color getCurrentPlayer() {
         return currentPlayer;
     }
 
-    public boolean getCheck(){
+    public boolean getCheck() {
         return check;
     }
 
-    public boolean getCheckMate(){
+    public boolean getCheckMate() {
         return checkMate;
     }
 
-    public ChessPiece getEnPassantVulnerable(){
+    public ChessPiece getEnPassantVulnerable() {
         return enPassantVulnerable;
     }
 
@@ -59,45 +59,44 @@ public class ChessMatch {
     }
 
     //return a piece matrix
-    public ChessPiece[][] getPieces(){
-        //ChessPiece can't interact with Boardgame.piece, so we downcast Boardgame.board to ChessPiece
+    public ChessPiece[][] getPieces() {
         ChessPiece[][] mat = new ChessPiece[board.getRows()][board.getColumns()];
-        for(int i=0; i<board.getRows(); i++){
-            for(int j=0; j<board.getColumns(); j++){
-                mat[i][j] = (ChessPiece) board.piece(i,j);//downcasting exactly here
+        for (int i=0; i<board.getRows(); i++) {
+            for (int j=0; j<board.getColumns(); j++) {
+                mat[i][j] = (ChessPiece) board.piece(i, j);//downcasting exactly here
             }
         }
-        return mat; //return of matrix with the pieces of the game
+        return mat;//return of matrix with the pieces of the game
     }
 
     //print a matrix of possibles moves
-    public boolean[][] possibleMoves(ChessPosition sourcePosition){
+    public boolean[][] possibleMoves(ChessPosition sourcePosition) {
         Position position = sourcePosition.toPosition();
         validateSourcePosition(position);
         return board.piece(position).possibleMoves();
     }
 
     //reads the movement that the user want to make
-    public ChessPiece performChessMove(ChessPosition source, ChessPosition target){
-        Position sourcePos = source.toPosition();
-        Position targetPos = target.toPosition();
-        validateSourcePos(sourcePos);
-        validateTargetPosition(sourcePos, targetPos);
-        Piece capturedPiece = makeMove(sourcePos, targetPos);//making the users movement
+    public ChessPiece performChessMove(ChessPosition sourcePosition, ChessPosition targetPosition) {
+        Position source = sourcePosition.toPosition();
+        Position target = targetPosition.toPosition();
+        validateSourcePosition(source);
+        validateTargetPosition(source, target);
+        Piece capturedPiece = makeMove(source, target);//making the users movement
 
         //player can't put himself in check state
-        if(testCheck(currentPlayer)){
-            undoMove(sourcePos, targetPos, capturedPiece);
+        if (testCheck(currentPlayer)) {
+            undoMove(source, target, capturedPiece);
             throw new ChessException("You can't put yourself in check");
         }
 
-        ChessPiece movedPiece = (ChessPiece)board.piece(targetPos);
+        ChessPiece movedPiece = (ChessPiece)board.piece(target);
 
         // #specialmove promotion
         promoted = null;
         if (movedPiece instanceof Pawn) {
             if ((movedPiece.getColor() == Color.WHITE && target.getRow() == 0) || (movedPiece.getColor() == Color.BLACK && target.getRow() == 7)) {
-                promoted = (ChessPiece)board.piece(targetPos);
+                promoted = (ChessPiece)board.piece(target);
                 promoted = replacePromotedPiece("Q");
             }
         }
@@ -106,20 +105,22 @@ public class ChessMatch {
         check = (testCheck(opponent(currentPlayer))) ? true : false;
 
         //if the move generate a check mate, the game needs to end
-        if(testCheckMate(opponent(currentPlayer))){
+        if (testCheckMate(opponent(currentPlayer))) {
             checkMate = true;
-        }else {
+        }
+        else {
             nextTurn();
         }
 
-        //special move en passant
-        if(movedPiece instanceof Pawn && (targetPos.getRow() == sourcePos.getRow() - 2 || targetPos.getRow() == sourcePos.getRow() + 2 )){
+        // #specialmove en passant
+        if (movedPiece instanceof Pawn && (target.getRow() == source.getRow() - 2 || target.getRow() == source.getRow() + 2)) {
             enPassantVulnerable = movedPiece;
-        }else{
+        }
+        else {
             enPassantVulnerable = null;
         }
 
-        return (ChessPiece) capturedPiece;//it's necessary to downcast Piece to ChessPiece
+        return (ChessPiece)capturedPiece;
     }
 
     public ChessPiece replacePromotedPiece(String type) {
@@ -132,11 +133,11 @@ public class ChessMatch {
 
         Position pos = promoted.getChessPosition().toPosition();
         Piece p = board.removePiece(pos);
-        piecesOnBoard.remove(p);
+        piecesOnTheBoard.remove(p);
 
         ChessPiece newPiece = newPiece(type, promoted.getColor());
         board.placePiece(newPiece, pos);
-        piecesOnBoard.add(newPiece);
+        piecesOnTheBoard.add(newPiece);
 
         return newPiece;
     }
@@ -148,49 +149,31 @@ public class ChessMatch {
         return new Rook(board, color);
     }
 
-    private void validateSourcePos(Position position){
-        if(!board.thereIsAPiece(position)){
-            throw new ChessException("There is no piece on source position");
-        }
-        if(currentPlayer != ((ChessPiece)board.piece(position)).getColor()){
-            throw new ChessException("The chosen piece is not yours");
-        }
-        if(!board.piece(position).isThereAnyPossibleMove()){
-            throw new ChessException("Thre is no possible moves");
-        }
-    }
-
-    private void validateTargetPosition(Position source, Position target){
-        if(!board.piece(source).possibleMove(target)){
-            throw new ChessException("The chosen piece can't move to target position");
-        }
-    }
-
-    private Piece makeMove(Position source, Position target){
+    private Piece makeMove(Position source, Position target) {
         ChessPiece p = (ChessPiece)board.removePiece(source);//removing piece from source
         p.increaseMoveCount();
-        Piece capturedPiece = board.removePiece(target); //if there is a piece on target, this method is going to capture it
+        Piece capturedPiece = board.removePiece(target);//if there is a piece on target, this method is going to capture it
         board.placePiece(p, target);//places the piece on the target
 
-        if(capturedPiece != null){
-            piecesOnBoard.remove(capturedPiece);
+        if (capturedPiece != null) {
+            piecesOnTheBoard.remove(capturedPiece);
             capturedPieces.add(capturedPiece);
         }
 
-        //special move castling kingside move
-        if(p instanceof King && target.getColumn() == source.getColumn() +2){
-            Position sourceT = new Position(source.getRow(), source.getColumn()+3);
-            Position targetT = new Position(source.getRow(), source.getColumn()+1);
-            ChessPiece rook = (ChessPiece) board.removePiece(sourceT); //move manually the rook
+        // #specialmove castling kingside rook
+        if (p instanceof King && target.getColumn() == source.getColumn() + 2) {
+            Position sourceT = new Position(source.getRow(), source.getColumn() + 3);
+            Position targetT = new Position(source.getRow(), source.getColumn() + 1);
+            ChessPiece rook = (ChessPiece)board.removePiece(sourceT);//move manually the rook
             board.placePiece(rook, targetT);
             rook.increaseMoveCount();
         }
 
-        //special move castling queenside move
-        if(p instanceof King && target.getColumn() == source.getColumn() -2){
-            Position sourceT = new Position(source.getRow(), source.getColumn()-4);
-            Position targetT = new Position(source.getRow(), source.getColumn()-1);
-            ChessPiece rook = (ChessPiece) board.removePiece(sourceT); //move manually the rook
+        // #specialmove castling queenside rook
+        if (p instanceof King && target.getColumn() == source.getColumn() - 2) {
+            Position sourceT = new Position(source.getRow(), source.getColumn() - 4);
+            Position targetT = new Position(source.getRow(), source.getColumn() - 1);
+            ChessPiece rook = (ChessPiece)board.removePiece(sourceT);//move manually the rook
             board.placePiece(rook, targetT);
             rook.increaseMoveCount();
         }
@@ -207,7 +190,7 @@ public class ChessMatch {
                 }
                 capturedPiece = board.removePiece(pawnPosition);
                 capturedPieces.add(capturedPiece);
-                piecesOnBoard.remove(capturedPiece);
+                piecesOnTheBoard.remove(capturedPiece);
             }
         }
 
@@ -215,31 +198,31 @@ public class ChessMatch {
     }
 
     //method to undo the makeMove
-    private void undoMove(Position source, Position target, Piece capturedPiece){
-        ChessPiece p = (ChessPiece) board.removePiece(target);
+    private void undoMove(Position source, Position target, Piece capturedPiece) {
+        ChessPiece p = (ChessPiece)board.removePiece(target);
         p.decreaseMoveCount();
         board.placePiece(p, source);
 
-        if(capturedPiece != null){//it means that a piece was captured and it needs to get replaced on the board
+        if (capturedPiece != null) {//it means that a piece was captured and it needs to get replaced on the board
             board.placePiece(capturedPiece, target);
             capturedPieces.remove(capturedPiece);
-            piecesOnBoard.add(capturedPiece);
+            piecesOnTheBoard.add(capturedPiece);
         }
 
-        //special move castling kingside move
-        if(p instanceof King && target.getColumn() == source.getColumn() +2){
-            Position sourceT = new Position(source.getRow(), source.getColumn()+3);
-            Position targetT = new Position(source.getRow(), source.getColumn()+1);
-            ChessPiece rook = (ChessPiece) board.removePiece(targetT); //move manually the rook
+        // #specialmove castling kingside rook
+        if (p instanceof King && target.getColumn() == source.getColumn() + 2) {
+            Position sourceT = new Position(source.getRow(), source.getColumn() + 3);
+            Position targetT = new Position(source.getRow(), source.getColumn() + 1);
+            ChessPiece rook = (ChessPiece)board.removePiece(targetT);//move manually the rook
             board.placePiece(rook, sourceT);
             rook.decreaseMoveCount();
         }
 
-        //special move castling queenside move
-        if(p instanceof King && target.getColumn() == source.getColumn() -2){
-            Position sourceT = new Position(source.getRow(), source.getColumn()-4);
-            Position targetT = new Position(source.getRow(), source.getColumn()-1);
-            ChessPiece rook = (ChessPiece) board.removePiece(targetT); //move manually the rook
+        // #specialmove castling queenside rook
+        if (p instanceof King && target.getColumn() == source.getColumn() - 2) {
+            Position sourceT = new Position(source.getRow(), source.getColumn() - 4);
+            Position targetT = new Position(source.getRow(), source.getColumn() - 1);
+            ChessPiece rook = (ChessPiece)board.removePiece(targetT);//move manually the rook
             board.placePiece(rook, sourceT);
             rook.decreaseMoveCount();
         }
@@ -258,77 +241,81 @@ public class ChessMatch {
                 board.placePiece(pawn, pawnPosition);
             }
         }
-
     }
 
-    private void validateSourcePosition(Position position){
-        if(!board.thereIsAPiece(position)){
+    private void validateSourcePosition(Position position) {
+        if (!board.thereIsAPiece(position)) {
             throw new ChessException("There is no piece on source position");
         }
         if (currentPlayer != ((ChessPiece)board.piece(position)).getColor()) {
             throw new ChessException("The chosen piece is not yours");
         }
-        if(!board.piece(position).isThereAnyPossibleMove()){
-            throw new ChessException("There is no moves for the chosen piece");
+        if (!board.piece(position).isThereAnyPossibleMove()) {
+            throw new ChessException("There is no possible moves for the chosen piece");
+        }
+    }
+
+    private void validateTargetPosition(Position source, Position target) {
+        if (!board.piece(source).possibleMove(target)) {
+            throw new ChessException("The chosen piece can't move to target position");
         }
     }
 
     //change players turns
-    private void nextTurn(){
+    private void nextTurn() {
         turn++;
-        currentPlayer = (currentPlayer == Color.WHITE ? Color.BLACK : Color.WHITE);
+        currentPlayer = (currentPlayer == Color.WHITE) ? Color.BLACK : Color.WHITE;
     }
 
     //change player color to play
-    private Color opponent(Color color){
+    private Color opponent(Color color) {
         return (color == Color.WHITE) ? Color.BLACK : Color.WHITE;
     }
 
     //list to filter what is the king's color
-    private ChessPiece king(Color color){
-        List<Piece> list = piecesOnBoard.stream().filter(x -> ((ChessPiece)x).getColor() == color).collect(Collectors.toList());
-        for(Piece p : list){
-            if( p instanceof King){
-                return (ChessPiece) p;
-
+    private ChessPiece king(Color color) {
+        List<Piece> list = piecesOnTheBoard.stream().filter(x -> ((ChessPiece)x).getColor() == color).collect(Collectors.toList());
+        for (Piece p : list) {
+            if (p instanceof King) {
+                return (ChessPiece)p;
             }
         }
         //exception throws if there is no king on board (should never been used)
-        throw new IllegalStateException("There is no" + color + "king on the board");
+        throw new IllegalStateException("There is no " + color + " king on the board");
     }
 
     //method to see if any piece on board is in a check state
-    private boolean testCheck(Color color){
+    private boolean testCheck(Color color) {
         Position kingPosition = king(color).getChessPosition().toPosition();
-        List<Piece> opponentPieces = piecesOnBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
-        for(Piece p : opponentPieces){
+        List<Piece> opponentPieces = piecesOnTheBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
+        for (Piece p : opponentPieces) {
             boolean[][] mat = p.possibleMoves();
-            if(mat[kingPosition.getRow()][kingPosition.getColumn()]){//check if any piece in check with the opponent king
+            if (mat[kingPosition.getRow()][kingPosition.getColumn()]) {
                 return true;
             }
         }
         return false;//there is no check state
     }
 
-    //method to see if the game is in a check mate situation
-    private boolean testCheckMate(Color color){
-        if(!testCheck(color)){
-            return false;//game is not in a check mate situation
+    //method to see if the game is in a check mate situatio
+    private boolean testCheckMate(Color color) {
+        if (!testCheck(color)) {
+            return false;//game is not in a check mate situatio
         }
         //gets all pieces of the color
-        List<Piece> list = piecesOnBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
-        for(Piece p: list){
+        List<Piece> list = piecesOnTheBoard.stream().filter(x -> ((ChessPiece)x).getColor() == color).collect(Collectors.toList());
+        for (Piece p : list) {
             boolean[][] mat = p.possibleMoves();
-            for(int i=0; i<board.getRows(); i++){
-                for(int j=0; j< board.getColumns(); j++){
-                    if(mat[i][j]){
+            for (int i=0; i<board.getRows(); i++) {
+                for (int j=0; j<board.getColumns(); j++) {
+                    if (mat[i][j]) {
                         //simulate the piece move to see if it's gonna be a check mate
                         Position source = ((ChessPiece)p).getChessPosition().toPosition();
-                        Position target = new Position(i,j);
+                        Position target = new Position(i, j);
                         Piece capturedPiece = makeMove(source, target);
                         boolean testCheck = testCheck(color);
                         undoMove(source, target, capturedPiece);
-                        if(!testCheck){
+                        if (!testCheck) {
                             return false;//the piece avoided the check mate
                         }
                     }
@@ -339,12 +326,12 @@ public class ChessMatch {
     }
 
     //placing pieces according to board positions (b1, a2)
-    private void placeNewPiece(char column, int row, ChessPiece piece){
+    private void placeNewPiece(char column, int row, ChessPiece piece) {
         board.placePiece(piece, new ChessPosition(column, row).toPosition());
-        piecesOnBoard.add(piece);
+        piecesOnTheBoard.add(piece);
     }
 
-    private void inititalSetup(){
+    private void initialSetup() {
         placeNewPiece('a', 1, new Rook(board, Color.WHITE));
         placeNewPiece('b', 1, new Knight(board, Color.WHITE));
         placeNewPiece('c', 1, new Bishop(board, Color.WHITE));
@@ -378,6 +365,5 @@ public class ChessMatch {
         placeNewPiece('f', 7, new Pawn(board, Color.BLACK, this));
         placeNewPiece('g', 7, new Pawn(board, Color.BLACK, this));
         placeNewPiece('h', 7, new Pawn(board, Color.BLACK, this));
-
     }
 }
